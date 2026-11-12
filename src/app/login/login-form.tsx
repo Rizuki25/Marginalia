@@ -1,9 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { signInAction, signUpAction } from "@/lib/actions";
 import { signInWithGoogleAction } from "@/lib/actions-auth";
 import { idleFormState, type FormState } from "@/lib/form-state";
+import { notifyAdded } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import { Field, FormMessage, TextInput } from "@/components/wild/field";
 
 type Mode = "signin" | "signup";
@@ -34,6 +37,7 @@ function GoogleIcon() {
 
 export function LoginForm({ errorMessage }: { errorMessage: string | null }) {
   const [mode, setMode] = useState<Mode>("signin");
+  const [googlePending, startGoogleTransition] = useTransition();
 
   return (
     <div className="mt-8">
@@ -46,13 +50,21 @@ export function LoginForm({ errorMessage }: { errorMessage: string | null }) {
         </p>
       ) : null}
 
-      <form action={signInWithGoogleAction}>
+      <form
+        action={() => {
+          startGoogleTransition(async () => {
+            await signInWithGoogleAction();
+          });
+        }}
+        aria-busy={googlePending}
+      >
         <button
           type="submit"
-          className="inline-flex h-11 w-full items-center justify-center gap-2.5 border border-ink bg-paper font-sans text-[14px] font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
+          disabled={googlePending}
+          className="inline-flex h-11 w-full items-center justify-center gap-2.5 border border-ink bg-paper font-sans text-[14px] font-medium text-ink transition-colors hover:bg-ink hover:text-paper disabled:opacity-50"
         >
-          <GoogleIcon />
-          Lanjutkan dengan Google
+          {googlePending ? <PixelSpinner /> : <GoogleIcon />}
+          {googlePending ? "Mengarahkan ke Google..." : "Lanjutkan dengan Google"}
         </button>
       </form>
 
@@ -100,8 +112,13 @@ function AuthForm({ mode }: { mode: Mode }) {
     idleFormState,
   );
 
+  useActionSuccess(state, (message) => {
+    notifyAdded(message, "Akun dibuat");
+  });
+
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-5">
+    <form action={formAction} aria-busy={pending} className="mt-6 flex flex-col gap-5">
+      <PendingSweep active={pending} label="Memproses autentikasi..." />
       {mode === "signup" ? (
         <Field label="Nama" htmlFor="auth-name">
           <TextInput
@@ -146,13 +163,18 @@ function AuthForm({ mode }: { mode: Mode }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 items-center justify-center rounded-[6px] border border-ink bg-neon px-5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-on-accent transition-colors hover:bg-[#c6eb00] disabled:opacity-40"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] border border-ink bg-neon px-5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-on-accent transition-colors hover:bg-[#c6eb00] disabled:opacity-40"
       >
-        {pending
-          ? "Memproses..."
-          : mode === "signin"
-            ? "Masuk ke dashboard"
-            : "Buat akun"}
+        {pending ? (
+          <>
+            <PixelSpinner />
+            <span>Memproses...</span>
+          </>
+        ) : mode === "signin" ? (
+          "Masuk ke dashboard"
+        ) : (
+          "Buat akun"
+        )}
       </button>
     </form>
   );

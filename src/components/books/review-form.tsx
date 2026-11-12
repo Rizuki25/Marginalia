@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { toast } from "sonner";
+import { useActionState } from "react";
 import { cn } from "cn";
 import { saveBookReviewAction } from "@/lib/actions-books";
 import { idleFormState } from "@/lib/form-state";
+import { notifyUpdated } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import { Field, FormMessage, TextArea } from "@/components/wild/field";
 
 export function ReviewForm({
@@ -22,9 +24,9 @@ export function ReviewForm({
     idleFormState,
   );
 
-  useEffect(() => {
-    if (state.status === "success") toast.success(state.message);
-  }, [state]);
+  useActionSuccess(state, (message) => {
+    notifyUpdated(message);
+  });
 
   const options: Array<{ value: string; label: string }> = [
     { value: "", label: "Tanpa rating" },
@@ -32,8 +34,9 @@ export function ReviewForm({
   ];
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} aria-busy={pending} className="flex flex-col gap-5">
       <input type="hidden" name="bookId" value={bookId} />
+      <PendingSweep active={pending} label="Menyimpan ulasan..." />
 
       <fieldset>
         <legend className="label text-ink">Rating</legend>
@@ -83,7 +86,14 @@ export function ReviewForm({
 
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan ulasan"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan ulasan"
+          )}
         </Button>
       </div>
     </form>

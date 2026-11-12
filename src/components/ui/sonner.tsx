@@ -12,6 +12,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={mode}
+      position="bottom-right"
+      offset={{ bottom: 24, right: 24 }}
+      mobileOffset={{ bottom: 84, left: 16, right: 16 }}
+      gap={12}
+      visibleToasts={3}
       className="toaster group"
       icons={{
         success: (
@@ -32,15 +37,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--surface-2)",
+          "--normal-bg": "var(--paper)",
           "--normal-text": "var(--ink)",
-          "--normal-border": "var(--line)",
-          "--border-radius": "var(--radius)",
+          "--normal-border": "var(--ink)",
+          "--border-radius": "0px",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast w-full sm:w-auto",
         },
       }}
       {...props}

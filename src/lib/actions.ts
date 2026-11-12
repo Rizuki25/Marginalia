@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { todayISO } from "@/lib/date";
+import { todayISO, validateLogDate } from "@/lib/date";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/supabase/session";
@@ -31,22 +31,21 @@ function int(formData: FormData, key: string): number | null {
   return Number.isFinite(value) ? Math.trunc(value) : null;
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 export async function saveReadingLogAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const bookId = text(formData, "bookId");
   const logDate = text(formData, "logDate");
+  const clientToday = text(formData, "clientToday");
   const endPage = int(formData, "endPage");
   const duration = int(formData, "durationMinutes");
   const dailyNote = text(formData, "dailyNote");
   const markFinished = formData.get("markFinished") === "on";
 
   if (!bookId) return fail("Pilih buku yang sedang kamu baca.");
-  if (!ISO_DATE.test(logDate)) return fail("Tanggal baca tidak valid.");
-  if (logDate > todayISO()) return fail("Tanggal baca tidak boleh di masa depan.");
+  const dateError = validateLogDate(logDate, clientToday);
+  if (dateError) return fail(dateError);
   if (endPage === null || endPage < 1) return fail("Isi halaman terakhir yang kamu capai.");
   if (duration !== null && (duration < 0 || duration > 1440))
     return fail("Durasi membaca harus antara 0 dan 1440 menit.");

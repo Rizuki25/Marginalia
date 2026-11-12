@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { saveQuoteAction } from "@/lib/actions";
 import { idleFormState } from "@/lib/form-state";
+import { notifyAdded } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import {
   Dialog,
   DialogClose,
@@ -15,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import {
   CheckboxRow,
   Field,
@@ -35,16 +37,23 @@ export function QuoteDialog({
   triggerVariant?: "default" | "outline";
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={<Button variant={triggerVariant} />}
         disabled={books.length === 0}
       >
         {triggerLabel}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={!pending}>
+        <PendingSweep active={pending} label="Menyimpan kutipan..." />
         <DialogHeader>
           <DialogTitle>Simpan kutipan</DialogTitle>
           <DialogDescription>
@@ -52,7 +61,16 @@ export function QuoteDialog({
             mudah ditemukan lagi.
           </DialogDescription>
         </DialogHeader>
-        {open ? <QuoteForm books={books} onDone={() => setOpen(false)} /> : null}
+        {open ? (
+          <QuoteForm
+            books={books}
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -61,9 +79,11 @@ export function QuoteDialog({
 function QuoteForm({
   books,
   onDone,
+  onPendingChange,
 }: {
   books: BookOption[];
   onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState(
     saveQuoteAction,
@@ -72,14 +92,16 @@ function QuoteForm({
   const [content, setContent] = useState("");
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    notifyAdded(message);
+    onDone();
+  });
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
       <div className="flex flex-col gap-5 px-6 py-5">
         <Field label="Kutipan" hint={`${content.length}/2000`} htmlFor="quote-content">
           <TextArea
@@ -149,11 +171,20 @@ function QuoteForm({
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan kutipan"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan kutipan"
+          )}
         </Button>
       </DialogFooter>
     </form>

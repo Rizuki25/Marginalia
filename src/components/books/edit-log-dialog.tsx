@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { updateReadingLogAction } from "@/lib/actions-books";
 import { idleFormState } from "@/lib/form-state";
-import { todayISO } from "@/lib/date";
+import { formatLongDate, todayISO } from "@/lib/date";
+import { notifyUpdated } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import {
   Dialog,
   DialogClose,
@@ -16,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import {
   Field,
   FormMessage,
@@ -32,14 +34,15 @@ export function EditLogDialog({
   totalPages: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [endPage, setEndPage] = useState(String(log.end_page));
-  const today = todayISO();
-
-  const end = Number(endPage);
-  const delta = Number.isFinite(end) ? Math.max(0, end - log.start_page) : 0;
+  const [pending, setPending] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={
           <button
@@ -50,7 +53,8 @@ export function EditLogDialog({
       >
         Ubah
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={!pending}>
+        <PendingSweep active={pending} label="Memperbarui catatan bacaan..." />
         <DialogHeader>
           <DialogTitle>Ubah catatan</DialogTitle>
           <DialogDescription>
@@ -62,11 +66,11 @@ export function EditLogDialog({
           <EditLogForm
             log={log}
             totalPages={totalPages}
-            endPage={endPage}
-            setEndPage={setEndPage}
-            delta={delta}
-            today={today}
-            onDone={() => setOpen(false)}
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
           />
         ) : null}
       </DialogContent>
@@ -77,45 +81,55 @@ export function EditLogDialog({
 function EditLogForm({
   log,
   totalPages,
-  endPage,
-  setEndPage,
-  delta,
-  today,
   onDone,
+  onPendingChange,
 }: {
   log: ReadingLogRow;
   totalPages: number;
-  endPage: string;
-  setEndPage: (value: string) => void;
-  delta: number;
-  today: string;
   onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState(
     updateReadingLogAction,
     idleFormState,
   );
+  const [logDate, setLogDate] = useState(log.log_date);
+  const [endPage, setEndPage] = useState(String(log.end_page));
+  const [duration, setDuration] = useState(
+    log.duration_minutes === null ? "" : String(log.duration_minutes),
+  );
+  const [dailyNote, setDailyNote] = useState(log.daily_note ?? "");
+  const today = todayISO();
+
+  const end = Number(endPage);
+  const delta = Number.isFinite(end) ? Math.max(0, end - log.start_page) : 0;
+  const dateHint = /^\d{4}-\d{2}-\d{2}$/.test(logDate)
+    ? formatLongDate(logDate)
+    : undefined;
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    notifyUpdated(message);
+    onDone();
+  });
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
       <input type="hidden" name="logId" value={log.id} />
+      <input type="hidden" name="clientToday" value={today} />
 
       <div className="flex flex-col gap-5 px-6 py-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Tanggal baca" htmlFor={`log-date-${log.id}`}>
+          <Field label="Tanggal baca" hint={dateHint} htmlFor={`log-date-${log.id}`}>
             <TextInput
               id={`log-date-${log.id}`}
               name="logDate"
               type="date"
-              defaultValue={log.log_date}
-              max={today}
+              value={logDate}
+              onChange={(event) => setLogDate(event.target.value)}
               required
             />
           </Field>
@@ -151,7 +165,8 @@ function EditLogForm({
             inputMode="numeric"
             min={0}
             max={1440}
-            defaultValue={log.duration_minutes ?? ""}
+            value={duration}
+            onChange={(event) => setDuration(event.target.value)}
             placeholder="25"
           />
         </Field>
@@ -161,7 +176,8 @@ function EditLogForm({
             id={`log-note-${log.id}`}
             name="dailyNote"
             rows={3}
-            defaultValue={log.daily_note ?? ""}
+            value={dailyNote}
+            onChange={(event) => setDailyNote(event.target.value)}
           />
         </Field>
 
@@ -169,11 +185,20 @@ function EditLogForm({
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan perubahan"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan perubahan"
+          )}
         </Button>
       </DialogFooter>
     </form>

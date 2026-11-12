@@ -370,6 +370,113 @@
   }
 }
 
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pixel-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pixel-spark-tl {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-11px, -11px, 0) scale(0.5);
+  }
+}
+
+@keyframes pixel-spark-tr {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(11px, -11px, 0) scale(0.5);
+  }
+}
+
+@keyframes pixel-spark-bl {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-11px, 11px, 0) scale(0.5);
+  }
+}
+
+@keyframes pixel-spark-br {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(11px, 11px, 0) scale(0.5);
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes pending-sweep {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(260%, 0, 0);
+  }
+}
+
+@keyframes pixel-chase {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
 .animate-pixel-drift {
   animation: pixel-drift 38s linear infinite;
 }
@@ -382,14 +489,75 @@
   animation: pixel-blink 2.4s steps(2, end) infinite;
 }
 
+.animate-toast-enter {
+  animation: toast-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-pixel-stamp {
+  animation: pixel-stamp 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-check-draw {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: check-draw 0.28s 0.08s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spark-tl {
+  animation: pixel-spark-tl 0.48s 0.06s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spark-tr {
+  animation: pixel-spark-tr 0.48s 0.06s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spark-bl {
+  animation: pixel-spark-bl 0.48s 0.06s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spark-br {
+  animation: pixel-spark-br 0.48s 0.06s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-progress {
+  transform-origin: left center;
+  animation: toast-progress var(--toast-duration, 4000ms) linear forwards;
+}
+
+.animate-pending-sweep {
+  animation: pending-sweep 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-pixel-chase {
+  animation: pixel-chase 0.72s steps(2, end) infinite;
+}
+
 /* One switch governs every decorative motion: the motion toggle, and the
    operating system preference for people who never touch the toggle. */
 [data-motion="off"] .animate-pixel-drift,
 [data-motion="off"] .animate-marquee,
 [data-motion="off"] .animate-blink,
+[data-motion="off"] .animate-toast-enter,
+[data-motion="off"] .animate-pixel-stamp,
+[data-motion="off"] .animate-spark-tl,
+[data-motion="off"] .animate-spark-tr,
+[data-motion="off"] .animate-spark-bl,
+[data-motion="off"] .animate-spark-br,
 [data-motion="off"] .pixel-lift:hover {
   animation: none !important;
   transform: none !important;
+}
+
+[data-motion="off"] .animate-check-draw {
+  animation: none !important;
+  stroke-dashoffset: 0;
+}
+
+[data-motion="off"] .animate-spark-tl,
+[data-motion="off"] .animate-spark-tr,
+[data-motion="off"] .animate-spark-bl,
+[data-motion="off"] .animate-spark-br {
+  opacity: 0;
 }
 
 /* The toggle label follows the state set on <html>, so no JS is needed to
@@ -409,7 +577,25 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-pixel-drift,
   .animate-marquee,
-  .animate-blink {
+  .animate-blink,
+  .animate-toast-enter,
+  .animate-pixel-stamp,
+  .animate-toast-progress,
+  .animate-pending-sweep,
+  .animate-pixel-chase {
     animation: none !important;
+  }
+
+  .animate-check-draw {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+
+  .animate-spark-tl,
+  .animate-spark-tr,
+  .animate-spark-bl,
+  .animate-spark-br {
+    animation: none !important;
+    opacity: 0;
   }
 }

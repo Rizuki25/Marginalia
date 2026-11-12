@@ -2,9 +2,10 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
-import { toast } from "sonner";
 import { createBookAction } from "@/lib/actions";
 import { idleFormState } from "@/lib/form-state";
+import { notifyAdded } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import type { BookCandidate, BookSearchResult } from "@/lib/books/search";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import {
   Field,
   FormMessage,
@@ -32,13 +34,20 @@ export function BookDialog({
   triggerVariant?: "default" | "outline";
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger render={<Button variant={triggerVariant} />}>
         {triggerLabel}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={!pending}>
+        <PendingSweep active={pending} label="Menambahkan buku ke rak..." />
         <DialogHeader>
           <DialogTitle>Tambah buku</DialogTitle>
           <DialogDescription>
@@ -46,7 +55,15 @@ export function BookDialog({
             terisi sendiri. Semua isian masih bisa diubah sebelum disimpan.
           </DialogDescription>
         </DialogHeader>
-        {open ? <BookForm onDone={() => setOpen(false)} /> : null}
+        {open ? (
+          <BookForm
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -78,7 +95,13 @@ function draftFrom(candidate: BookCandidate): Draft {
   };
 }
 
-function BookForm({ onDone }: { onDone: () => void }) {
+function BookForm({
+  onDone,
+  onPendingChange,
+}: {
+  onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
+}) {
   const [state, formAction, pending] = useActionState(
     createBookAction,
     idleFormState,
@@ -87,11 +110,13 @@ function BookForm({ onDone }: { onDone: () => void }) {
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    notifyAdded(message);
+    onDone();
+  });
 
   const patch = (changes: Partial<Draft>) => {
     setDraft((current) => ({ ...current, ...changes }));
@@ -99,7 +124,7 @@ function BookForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
       <div className="flex flex-col gap-5 overflow-y-auto px-6 py-5">
         <BookSearch
           onPick={(candidate) => {
@@ -209,11 +234,20 @@ function BookForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Tambah ke rak"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menambahkan...</span>
+            </>
+          ) : (
+            "Tambah ke rak"
+          )}
         </Button>
       </DialogFooter>
     </form>
@@ -296,7 +330,14 @@ function BookSearch({ onPick }: { onPick: (candidate: BookCandidate) => void }) 
             disabled={lookup.status === "loading"}
             className="shrink-0"
           >
-            {lookup.status === "loading" ? "Mencari..." : "Cari"}
+            {lookup.status === "loading" ? (
+              <>
+                <PixelSpinner />
+                <span>Mencari...</span>
+              </>
+            ) : (
+              "Cari"
+            )}
           </Button>
         </div>
         <p className="text-[12px] leading-snug text-muted-foreground">
@@ -307,7 +348,10 @@ function BookSearch({ onPick }: { onPick: (candidate: BookCandidate) => void }) 
 
       <div aria-live="polite" className="mt-3">
         {lookup.status === "idle" ? null : lookup.status === "loading" ? (
-          <p className="label-sm text-muted-foreground">Mencari buku...</p>
+          <div className="flex flex-col gap-2">
+            <PendingSweep active label="Mencari buku..." />
+            <p className="label-sm text-muted-foreground">Mencari buku...</p>
+          </div>
         ) : lookup.status === "failed" ? (
           <p
             role="alert"

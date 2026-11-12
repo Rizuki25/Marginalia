@@ -52,7 +52,7 @@ export default function RootLayout({
       <body className="min-h-full bg-paper text-ink">
         <PixelCursor />
         {children}
-        <Toaster position="bottom-center" />
+        <Toaster />
       </body>
     </html>
   );

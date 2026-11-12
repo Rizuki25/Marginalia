@@ -7,6 +7,7 @@ import {
   MobileTopBar,
   Sidebar,
 } from "@/components/shell/sidebar";
+import { FlashToast } from "@/components/wild/flash-toast";
 
 /**
  * The reader identity is all the shell needs. How the data is stored stays out
@@ -38,6 +39,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 pb-24 md:pb-0">{children}</main>
       </div>
       <MobileBottomNav />
+      <FlashToast />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { updateQuoteAction } from "@/lib/actions";
 import { idleFormState } from "@/lib/form-state";
+import { notifyUpdated } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import {
   Dialog,
   DialogClose,
@@ -15,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import { Field, FormMessage, TextArea, TextInput } from "@/components/wild/field";
 import type { QuoteRow } from "@/lib/types";
 
@@ -26,9 +28,15 @@ export function EditQuoteDialog({
   triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={
           <button
@@ -42,7 +50,8 @@ export function EditQuoteDialog({
       >
         Ubah
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={!pending}>
+        <PendingSweep active={pending} label="Memperbarui kutipan..." />
         <DialogHeader>
           <DialogTitle>Ubah kutipan</DialogTitle>
           <DialogDescription>
@@ -50,7 +59,16 @@ export function EditQuoteDialog({
             tetap.
           </DialogDescription>
         </DialogHeader>
-        {open ? <EditQuoteForm quote={quote} onDone={() => setOpen(false)} /> : null}
+        {open ? (
+          <EditQuoteForm
+            quote={quote}
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -59,9 +77,11 @@ export function EditQuoteDialog({
 function EditQuoteForm({
   quote,
   onDone,
+  onPendingChange,
 }: {
   quote: QuoteRow;
   onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState(
     updateQuoteAction,
@@ -69,14 +89,16 @@ function EditQuoteForm({
   );
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    notifyUpdated(message);
+    onDone();
+  });
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
       <input type="hidden" name="quoteId" value={quote.id} />
 
       <div className="flex flex-col gap-5 px-6 py-5">
@@ -124,11 +146,20 @@ function EditQuoteForm({
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan perubahan"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan perubahan"
+          )}
         </Button>
       </DialogFooter>
     </form>

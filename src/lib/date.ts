@@ -1,4 +1,23 @@
-/** Date helpers. All dates are plain `YYYY-MM-DD` strings in local time. */
+/** Date helpers. All dates are plain `YYYY-MM-DD` strings. */
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const DEFAULT_TIME_ZONE =
+  process.env.MARGINALIA_TIMEZONE ?? "Asia/Jakarta";
+
+const serverDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DEFAULT_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const utcDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "UTC",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 export function toISODate(date: Date): string {
   const year = date.getFullYear();
@@ -7,8 +26,52 @@ export function toISODate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function todayISO(): string {
-  return toISODate(new Date());
+export function todayISO(now = new Date()): string {
+  if (typeof window !== "undefined") {
+    return toISODate(now);
+  }
+  return serverDateFormatter.format(now);
+}
+
+/**
+ * Resolves the maximum allowed reading log date (`YYYY-MM-DD`).
+ * Never drops below the server's configured timezone (`Asia/Jakarta`), so
+ * privacy-hardened browsers that spoof UTC (such as Firefox RFP) cannot
+ * block today's WIB date.
+ */
+export function resolveMaxLogDate(
+  clientToday?: string | null,
+  now = new Date(),
+): string {
+  const fallback = todayISO(now);
+  if (!clientToday || !ISO_DATE_RE.test(clientToday)) return fallback;
+
+  const utcToday = utcDateFormatter.format(now);
+  if (
+    clientToday >= addDays(utcToday, -1) &&
+    clientToday <= addDays(utcToday, 1) &&
+    clientToday > fallback
+  ) {
+    return clientToday;
+  }
+  return fallback;
+}
+
+/**
+ * Validates a `YYYY-MM-DD` reading log date against the reader's local today.
+ * Returns an Indonesian error message if invalid, or `null` when valid.
+ */
+export function validateLogDate(
+  logDate: string,
+  clientToday?: string | null,
+): string | null {
+  if (!ISO_DATE_RE.test(logDate)) return "Tanggal baca tidak valid.";
+
+  const maxDate = resolveMaxLogDate(clientToday);
+  if (logDate > maxDate) {
+    return `Tanggal baca (${formatLongDate(logDate)}) tidak boleh melewati hari ini (${formatLongDate(maxDate)}).`;
+  }
+  return null;
 }
 
 export function parseISODate(iso: string): Date {

@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { useActionState, useRef } from "react";
 import { updateCoverAction } from "@/lib/actions-books";
 import { idleFormState } from "@/lib/form-state";
+import { notifyUpdated } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import { Field, FormMessage, TextInput } from "@/components/wild/field";
 
 export function CoverForm({
@@ -20,16 +22,20 @@ export function CoverForm({
   );
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      formRef.current?.reset();
-    }
-  }, [state]);
+  useActionSuccess(state, (message) => {
+    notifyUpdated(message);
+    formRef.current?.reset();
+  });
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-busy={pending}
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="bookId" value={bookId} />
+      <PendingSweep active={pending} label="Mengunggah sampul..." />
 
       <Field label="Unggah gambar" hint="JPG, PNG, WebP · maks 3 MB" htmlFor="cover-file">
         <input
@@ -54,7 +60,16 @@ export function CoverForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="outline" disabled={pending}>
-          {pending ? "Mengunggah..." : hasCover ? "Ganti sampul" : "Simpan sampul"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Mengunggah...</span>
+            </>
+          ) : hasCover ? (
+            "Ganti sampul"
+          ) : (
+            "Simpan sampul"
+          )}
         </Button>
         <span className="label-sm text-muted-foreground">
           Kosongkan kedua kolom untuk membatalkan.

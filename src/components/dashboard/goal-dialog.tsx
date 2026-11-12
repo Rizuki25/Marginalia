@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { saveReadingGoalAction } from "@/lib/actions-goals";
 import { idleFormState } from "@/lib/form-state";
+import { notifyAdded, notifyDeleted, notifyUpdated } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import type { ReadingGoalRow } from "@/lib/types";
 import {
   Dialog,
@@ -16,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import { Field, FormMessage, TextInput } from "@/components/wild/field";
 
 export function GoalDialog({
@@ -26,10 +28,16 @@ export function GoalDialog({
   year: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
   const hasGoal = goal !== null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={
           <button
@@ -40,7 +48,8 @@ export function GoalDialog({
       >
         {hasGoal ? "Ubah target" : "Atur target"}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={!pending} className="sm:max-w-md">
+        <PendingSweep active={pending} label="Menyimpan target membaca..." />
         <DialogHeader>
           <DialogTitle>Target membaca {year}</DialogTitle>
           <DialogDescription>
@@ -50,7 +59,16 @@ export function GoalDialog({
           </DialogDescription>
         </DialogHeader>
         {open ? (
-          <GoalForm goal={goal} year={year} onDone={() => setOpen(false)} />
+          <GoalForm
+            goal={goal}
+            year={year}
+            hasGoal={hasGoal}
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
@@ -60,11 +78,15 @@ export function GoalDialog({
 function GoalForm({
   goal,
   year,
+  hasGoal,
   onDone,
+  onPendingChange,
 }: {
   goal: ReadingGoalRow | null;
   year: number;
+  hasGoal: boolean;
   onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState(
     saveReadingGoalAction,
@@ -72,14 +94,18 @@ function GoalForm({
   );
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    if (message === "Target dihapus.") notifyDeleted(message);
+    else if (hasGoal) notifyUpdated(message);
+    else notifyAdded(message);
+    onDone();
+  });
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
       <input type="hidden" name="year" value={year} />
 
       <div className="flex flex-col gap-5 px-6 py-5">
@@ -117,11 +143,20 @@ function GoalForm({
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan target"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan target"
+          )}
         </Button>
       </DialogFooter>
     </form>

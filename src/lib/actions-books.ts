@@ -4,12 +4,13 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { todayISO } from "@/lib/date";
+import { todayISO, validateLogDate } from "@/lib/date";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/supabase/session";
 import { coversDir, mutate } from "@/lib/demo/store";
 import { DEMO_USER_ID } from "@/lib/demo/seed";
+import { setFlashToast } from "@/lib/flash";
 import { isBookStatus, STATUS_LABEL } from "@/lib/status";
 import type { FormState } from "@/lib/form-state";
 import { recomputeProgress } from "@/lib/books/progress";
@@ -399,6 +400,11 @@ export async function deleteBookAction(formData: FormData): Promise<void> {
   revalidatePath("/");
   revalidatePath("/logs");
   revalidatePath("/books");
+  await setFlashToast({
+    kind: "deleted",
+    title: "Berhasil dihapus",
+    message: "Buku dan seluruh catatannya dihapus.",
+  });
   redirect("/books");
 }
 
@@ -408,15 +414,15 @@ export async function updateReadingLogAction(
 ): Promise<FormState> {
   const logId = text(formData, "logId");
   const logDate = text(formData, "logDate");
+  const clientToday = text(formData, "clientToday");
   const endPage = Number(text(formData, "endPage"));
   const durationRaw = text(formData, "durationMinutes");
   const dailyNote = text(formData, "dailyNote");
   const duration = durationRaw === "" ? null : Number(durationRaw);
 
   if (!logId) return fail("Catatan tidak dikenal.");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(logDate))
-    return fail("Tanggal baca tidak valid.");
-  if (logDate > todayISO()) return fail("Tanggal baca tidak boleh di masa depan.");
+  const dateError = validateLogDate(logDate, clientToday);
+  if (dateError) return fail(dateError);
   if (!Number.isInteger(endPage) || endPage < 1)
     return fail("Halaman akhir harus angka lebih dari 0.");
   if (duration !== null && (!Number.isInteger(duration) || duration < 0 || duration > 1440))

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { cardFilename, downloadBlob, renderQuoteCard } from "@/lib/quotes/card";
+import { notifyDownloaded, notifyError } from "@/lib/notify";
+import { PixelSpinner } from "@/components/wild/feedback-popup";
 import type { VaultQuote } from "@/lib/data/quotes";
 
 /**
@@ -26,9 +27,9 @@ export function ExportQuoteCard({ quote }: { quote: VaultQuote }) {
       };
       const blob = await renderQuoteCard(card);
       downloadBlob(blob, cardFilename(card));
-      toast.success("Kartu kutipan diunduh.");
+      notifyDownloaded("Kartu kutipan diunduh.");
     } catch {
-      toast.error("Gagal membuat gambar. Coba lagi.");
+      notifyError("Gagal membuat gambar. Coba lagi.");
     } finally {
       setBusy(false);
     }
@@ -39,9 +40,16 @@ export function ExportQuoteCard({ quote }: { quote: VaultQuote }) {
       type="button"
       onClick={() => void run()}
       disabled={busy}
-      className="label-sm inline-flex min-h-11 items-center border border-line px-2.5 text-muted-foreground transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
+      className="label-sm inline-flex min-h-11 items-center gap-1.5 border border-line px-2.5 text-muted-foreground transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
     >
-      {busy ? "Menyiapkan..." : "Kartu"}
+      {busy ? (
+        <>
+          <PixelSpinner />
+          <span>Menyiapkan...</span>
+        </>
+      ) : (
+        "Kartu"
+      )}
     </button>
   );
 }

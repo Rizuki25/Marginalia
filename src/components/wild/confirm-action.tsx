@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { notifyDeleted } from "@/lib/notify";
 import {
   Dialog,
   DialogClose,
@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 
 /**
  * Confirmation for destructive actions. It is a real dialog rather than
@@ -45,12 +46,17 @@ export function ConfirmAction({
     startTransition(async () => {
       await action(formData);
       setOpen(false);
-      toast.success(successMessage);
+      notifyDeleted(successMessage);
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={
           <button
@@ -65,23 +71,33 @@ export function ConfirmAction({
         {triggerLabel}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={!pending} className="sm:max-w-md">
+        <PendingSweep active={pending} label="Sedang menghapus..." />
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <form action={run}>
+        <form action={run} aria-busy={pending}>
           {Object.entries(hidden).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
 
           <DialogFooter className="mt-5">
-            <DialogClose render={<Button variant="ghost" type="button" />}>
+            <DialogClose
+              render={<Button variant="ghost" type="button" disabled={pending} />}
+            >
               Batal
             </DialogClose>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Menghapus..." : confirmLabel}
+            <Button type="submit" variant="destructive" disabled={pending}>
+              {pending ? (
+                <>
+                  <PixelSpinner />
+                  <span>Menghapus...</span>
+                </>
+              ) : (
+                confirmLabel
+              )}
             </Button>
           </DialogFooter>
         </form>

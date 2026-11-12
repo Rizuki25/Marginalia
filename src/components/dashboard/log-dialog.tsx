@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { saveReadingLogAction } from "@/lib/actions";
 import { idleFormState } from "@/lib/form-state";
-import { todayISO } from "@/lib/date";
+import { formatLongDate, todayISO } from "@/lib/date";
+import { notifyAdded } from "@/lib/notify";
+import { useActionSuccess } from "@/lib/use-action-feedback";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingSweep, PixelSpinner } from "@/components/wild/feedback-popup";
 import {
   CheckboxRow,
   Field,
@@ -36,16 +38,23 @@ export function LogDialog({
   triggerVariant?: "default" | "outline";
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!pending) setOpen(next);
+      }}
+    >
       <DialogTrigger
         render={<Button variant={triggerVariant} />}
         disabled={books.length === 0}
       >
         {triggerLabel}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={!pending}>
+        <PendingSweep active={pending} label="Menyimpan catatan bacaan..." />
         <DialogHeader>
           <DialogTitle>Catat bacaan hari ini</DialogTitle>
           <DialogDescription>
@@ -53,7 +62,16 @@ export function LogDialog({
             dan progress bar ikut bergerak.
           </DialogDescription>
         </DialogHeader>
-        {open ? <LogForm books={books} onDone={() => setOpen(false)} /> : null}
+        {open ? (
+          <LogForm
+            books={books}
+            onDone={() => {
+              setPending(false);
+              setOpen(false);
+            }}
+            onPendingChange={setPending}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -62,9 +80,11 @@ export function LogDialog({
 function LogForm({
   books,
   onDone,
+  onPendingChange,
 }: {
   books: BookOption[];
   onDone: () => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState(
     saveReadingLogAction,
@@ -72,23 +92,32 @@ function LogForm({
   );
   const [bookId, setBookId] = useState(books[0].id);
   const selected = books.find((book) => book.id === bookId) ?? books[0];
-  const [endPage, setEndPage] = useState(String(selected.current_page));
-  const [finished, setFinished] = useState(false);
   const today = todayISO();
+  const [logDate, setLogDate] = useState(today);
+  const [endPage, setEndPage] = useState(String(selected.current_page));
+  const [duration, setDuration] = useState("");
+  const [dailyNote, setDailyNote] = useState("");
+  const [finished, setFinished] = useState(false);
 
   const end = Number(endPage);
   const delta = Number.isFinite(end) ? Math.max(0, end - selected.current_page) : 0;
   const reachesEnd = end === selected.total_pages;
+  const dateHint = /^\d{4}-\d{2}-\d{2}$/.test(logDate)
+    ? formatLongDate(logDate)
+    : undefined;
 
   useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message);
-      onDone();
-    }
-  }, [state, onDone]);
+    onPendingChange(pending);
+  }, [pending, onPendingChange]);
+
+  useActionSuccess(state, (message) => {
+    notifyAdded(message);
+    onDone();
+  });
 
   return (
-    <form action={formAction} className="flex flex-col">
+    <form action={formAction} aria-busy={pending} className="flex flex-col">
+      <input type="hidden" name="clientToday" value={today} />
       <div className="flex flex-col gap-5 px-6 py-5">
         <Field label="Buku" htmlFor="log-book">
           <NativeSelect
@@ -112,13 +141,13 @@ function LogForm({
         </Field>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Tanggal baca" htmlFor="log-date">
+          <Field label="Tanggal baca" hint={dateHint} htmlFor="log-date">
             <TextInput
               id="log-date"
               name="logDate"
               type="date"
-              defaultValue={today}
-              max={today}
+              value={logDate}
+              onChange={(event) => setLogDate(event.target.value)}
               required
             />
           </Field>
@@ -154,6 +183,8 @@ function LogForm({
             inputMode="numeric"
             min={0}
             max={1440}
+            value={duration}
+            onChange={(event) => setDuration(event.target.value)}
             placeholder="25"
           />
         </Field>
@@ -163,6 +194,8 @@ function LogForm({
             id="log-note"
             name="dailyNote"
             rows={3}
+            value={dailyNote}
+            onChange={(event) => setDailyNote(event.target.value)}
             placeholder="Bab 6 bahas kebiasaan yang menempel pada tempat."
           />
         </Field>
@@ -185,11 +218,20 @@ function LogForm({
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose
+          render={<Button variant="ghost" type="button" disabled={pending} />}
+        >
           Batal
         </DialogClose>
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan catatan"}
+          {pending ? (
+            <>
+              <PixelSpinner />
+              <span>Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan catatan"
+          )}
         </Button>
       </DialogFooter>
     </form>

@@ -1,7 +1,8 @@
-import { deleteQuoteAction, toggleQuoteFavoriteAction } from "@/lib/actions";
+import { deleteQuoteAction } from "@/lib/actions";
 import { ConfirmAction } from "@/components/wild/confirm-action";
 import { EditQuoteDialog } from "./edit-quote-dialog";
 import { ExportQuoteCard } from "./export-quote-card";
+import { QuoteFavoriteButton } from "./quote-favorite-button";
 import type { VaultQuote } from "@/lib/data/quotes";
 
 export function QuoteCard({ quote }: { quote: VaultQuote }) {
@@ -16,38 +17,11 @@ export function QuoteCard({ quote }: { quote: VaultQuote }) {
     <article className="pixel-lift mb-5 break-inside-avoid border border-line bg-paper p-5 hover:border-ink/50 hover:shadow-[4px_4px_0_0_var(--ink)]">
       <div className="flex items-start justify-between gap-3">
         <p className="label-sm text-muted-foreground">{place || "Tanpa halaman"}</p>
-        <form action={toggleQuoteFavoriteAction}>
-          <input type="hidden" name="quoteId" value={quote.id} />
-          <input
-            type="hidden"
-            name="isFavorite"
-            value={quote.is_favorite ? "false" : "true"}
-          />
-          <button
-            type="submit"
-            aria-pressed={quote.is_favorite}
-            aria-label={
-              quote.is_favorite
-                ? `Hapus ${quote.bookTitle} dari favorit`
-                : `Tandai ${quote.bookTitle} sebagai favorit`
-            }
-            className={
-              quote.is_favorite
-                ? "label-sm inline-flex min-h-11 items-center gap-1.5 border border-ink bg-ink px-2.5 text-paper"
-                : "label-sm inline-flex min-h-11 items-center gap-1.5 border border-line px-2.5 text-muted-foreground transition-colors hover:border-ink hover:text-ink"
-            }
-          >
-            <span
-              aria-hidden="true"
-              className={
-                quote.is_favorite
-                  ? "size-2 bg-neon"
-                  : "size-2 border border-current"
-              }
-            />
-            Favorit
-          </button>
-        </form>
+        <QuoteFavoriteButton
+          quoteId={quote.id}
+          bookTitle={quote.bookTitle}
+          isFavorite={quote.is_favorite}
+        />
       </div>
 
       <blockquote className="mt-4 font-sans text-[17px] leading-[1.5] tracking-[-0.01em] text-ink">
