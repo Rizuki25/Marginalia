@@ -9,8 +9,25 @@ export const metadata: Metadata = {
   title: "Masuk · Marginalia",
 };
 
-export default async function LoginPage() {
+const AUTH_ERRORS: Record<string, string> = {
+  google_unavailable: "Masuk dengan Google sedang tidak tersedia. Pakai email dan kata sandi.",
+  missing_code: "Proses masuk tidak selesai. Coba lagi.",
+  access_denied: "Izin akses Google dibatalkan. Coba lagi kalau memang mau masuk.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string | string[] }>;
+}) {
   if (!isSupabaseConfigured) redirect("/");
+
+  const { error } = await searchParams;
+  const errorCode = Array.isArray(error) ? error[0] : error;
+  const errorMessage = errorCode
+    ? (AUTH_ERRORS[errorCode] ??
+      `Masuk dengan Google gagal: ${errorCode}`)
+    : null;
 
   const user = await getSessionUser();
   if (user) redirect("/");
@@ -39,9 +56,10 @@ export default async function LoginPage() {
           <p className="label text-muted-foreground">Masuk</p>
           <h1 className="display-2 mt-3 text-[32px]">Selamat membaca lagi.</h1>
           <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
-            Masuk dengan email dan kata sandi yang kamu daftarkan.
+            Lanjutkan dengan akun Google, atau pakai email dan kata sandi yang
+            kamu daftarkan.
           </p>
-          <LoginForm />
+          <LoginForm errorMessage={errorMessage} />
         </div>
       </div>
     </div>
