@@ -80,13 +80,16 @@ export function Sidebar({
   );
 }
 
-export function MobileTopBar() {
+export function MobileTopBar({ signedIn }: { signedIn: boolean }) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper px-5 py-3 md:hidden">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-paper px-5 py-3 md:hidden">
       <Wordmark compact />
       <div className="flex items-center gap-2">
-        <ThemeToggle />
-        <MotionToggle />
+        <ThemeToggle compact />
+        <MotionToggle compact />
+        {/* The desktop sidebar holds the account block; on mobile this header
+            is the only place a signed-in reader can reach it. */}
+        {signedIn ? <SignOutButton iconOnly /> : null}
       </div>
     </header>
   );

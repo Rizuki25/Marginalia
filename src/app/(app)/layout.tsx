@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         signedIn={signedIn}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileTopBar />
+        <MobileTopBar signedIn={signedIn} />
         <main className="flex-1 pb-24 md:pb-0">{children}</main>
       </div>
       <MobileBottomNav />
