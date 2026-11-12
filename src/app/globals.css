@@ -1,0 +1,415 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  Wild design system, adapted for Marginalia.
+  Paper white surface, ink black type, one neon accent reserved for
+  the reading progress bar and the primary action button.
+*/
+
+:root {
+  color-scheme: light;
+  --paper: #ffffff;
+  --ink: #0a0a0a;
+  --muted: #5f6779;
+  --line: rgba(10, 10, 10, 0.12);
+  --line-soft: rgba(10, 10, 10, 0.06);
+  --neon: #d8ff00;
+  /* Text and edges that sit on top of neon never follow the theme: neon is a
+     light colour, so the mark on it stays dark or it becomes unreadable. */
+  --on-accent: #0a0a0a;
+  --danger: #a3331c;
+  --danger-fill: #c33f20;
+  --on-danger: #ffffff;
+  --surface-2: #fafaf7;
+  --scrim: rgba(10, 10, 10, 0.4);
+  --red: #e0492a;
+  /* Support colours taken straight from DESIGN.md, used only by the pixel
+     decorations and the cursor trail so the accents read as "colourful"
+     without adding a new palette. */
+  --warm: #f6d36d;
+  --navy: #1e2544;
+  --radius: 6px;
+  --maxw: 1440px;
+  --gutter: 56px;
+}
+
+/*
+  Dark theme. Only the tokens change: every component already reads paper, ink,
+  line and neon, so surfaces that invert (bg-ink text-paper) invert again on
+  their own. `color-scheme` is what makes native date pickers, selects and
+  scrollbars follow instead of staying white.
+*/
+.dark {
+  color-scheme: dark;
+  --paper: #0b0b0c;
+  --ink: #f2f2ef;
+  --muted: #a3a9b8;
+  --line: rgba(242, 242, 239, 0.16);
+  --line-soft: rgba(242, 242, 239, 0.08);
+  --danger: #ff9a82;
+  --danger-fill: #e0492a;
+  --on-danger: #0b0b0c;
+  --surface-2: #151517;
+  --scrim: rgba(0, 0, 0, 0.7);
+  --red: #ff7a58;
+  --warm: #f6d36d;
+  --navy: #8f9ac0;
+}
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--paper);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--paper);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--paper);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger-fill);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--ink);
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-neon: var(--neon);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
+  --color-on-danger: var(--on-danger);
+  --color-surface-2: var(--surface-2);
+  --color-warm: var(--warm);
+  --color-navy: var(--navy);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+
+  --radius-sm: 0px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--neon);
+    color: var(--on-accent);
+  }
+
+  a[href],
+  button,
+  summary,
+  select,
+  label[for],
+  input[type="checkbox"],
+  input[type="radio"],
+  [role="button"],
+  [role="tab"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .label-sm {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .display {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.92;
+    text-wrap: balance;
+  }
+
+  .display-2 {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .shell {
+      padding-inline: var(--gutter);
+    }
+  }
+}
+
+/*
+  Pixel layer.
+
+  The reference (craft.wild.as) shapes its controls with a stepped corner cut
+  rather than a radius. That is the one element carried over, scaled up to a
+  10px notch in two 5px steps: at 6px the steps were too fine to read as
+  pixels at button size.
+*/
+@layer utilities {
+  .pixel-corners {
+    --pc-cut: 10px;
+    --pc-step: 5px;
+    clip-path: polygon(
+      var(--pc-cut) 0,
+      calc(100% - var(--pc-cut)) 0,
+      calc(100% - var(--pc-cut)) var(--pc-step),
+      calc(100% - var(--pc-step)) var(--pc-step),
+      calc(100% - var(--pc-step)) var(--pc-cut),
+      100% var(--pc-cut),
+      100% calc(100% - var(--pc-cut)),
+      calc(100% - var(--pc-step)) calc(100% - var(--pc-cut)),
+      calc(100% - var(--pc-step)) calc(100% - var(--pc-step)),
+      calc(100% - var(--pc-cut)) calc(100% - var(--pc-step)),
+      calc(100% - var(--pc-cut)) 100%,
+      var(--pc-cut) 100%,
+      var(--pc-cut) calc(100% - var(--pc-step)),
+      var(--pc-step) calc(100% - var(--pc-step)),
+      var(--pc-step) calc(100% - var(--pc-cut)),
+      0 calc(100% - var(--pc-cut)),
+      0 var(--pc-cut),
+      var(--pc-step) var(--pc-cut),
+      var(--pc-step) var(--pc-step),
+      var(--pc-cut) var(--pc-step),
+      var(--pc-cut) 0
+    );
+  }
+
+  /* Small controls keep a proportionally smaller notch. */
+  .pixel-corners-sm {
+    --pc-cut: 8px;
+    --pc-step: 4px;
+  }
+
+  /*
+    Pixel marquee. `--px` is one pixel cell, which is also the shadow step.
+    A letter is sized in cells and its box-shadow paints every filled cell, so
+    a glyph costs one DOM node instead of 25.
+  */
+  .pixel-marquee {
+    --px: 3px;
+  }
+
+  @media (min-width: 768px) {
+    .pixel-marquee {
+      --px: 4px;
+    }
+  }
+
+  .pixel-word {
+    display: inline-flex;
+    gap: calc(var(--px) * 1.5);
+    margin-inline: calc(var(--px) * 2);
+  }
+
+  /*
+    A letter is a sized wrapper; the glyph is painted by a one-cell pseudo
+    element whose box-shadow repeats that cell at every filled offset. Drawing
+    the shadow on the wrapper itself would copy the whole letter box instead of
+    one pixel.
+  */
+  .pixel-letter {
+    position: relative;
+    display: block;
+    flex: none;
+    background: transparent;
+  }
+
+  .pixel-letter::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--px);
+    height: var(--px);
+    box-shadow: var(--glyph);
+  }
+
+  .pixel-space {
+    display: inline-block;
+    width: calc(var(--px) * 5);
+  }
+
+  .pixel-separator {
+    display: inline-block;
+    flex: none;
+    width: calc(var(--px) * 2);
+    height: calc(var(--px) * 2);
+    margin-inline: calc(var(--px) * 6);
+    background: var(--ink);
+    opacity: 0.35;
+  }
+
+  /* A hairline drawn as pixel ticks instead of a solid rule. */
+  .pixel-rule {
+    height: 3px;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--ink) 0 6px,
+      transparent 6px 12px
+    );
+  }
+
+  .pixel-lift {
+    transition:
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.18s ease,
+      background-color 0.18s ease;
+  }
+
+  .pixel-lift:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Drift for the pixel wave. Two copies sit side by side, so -50% loops. */
+@keyframes pixel-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes pixel-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.animate-pixel-drift {
+  animation: pixel-drift 38s linear infinite;
+}
+
+.animate-marquee {
+  animation: marquee-slide 32s linear infinite;
+}
+
+.animate-blink {
+  animation: pixel-blink 2.4s steps(2, end) infinite;
+}
+
+/* One switch governs every decorative motion: the motion toggle, and the
+   operating system preference for people who never touch the toggle. */
+[data-motion="off"] .animate-pixel-drift,
+[data-motion="off"] .animate-marquee,
+[data-motion="off"] .animate-blink,
+[data-motion="off"] .pixel-lift:hover {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* The toggle label follows the state set on <html>, so no JS is needed to
+   swap the text. Default assumes motion is on until the effect runs. */
+.motion-off-label {
+  display: none;
+}
+
+[data-motion="off"] .motion-on-label {
+  display: none;
+}
+
+[data-motion="off"] .motion-off-label {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pixel-drift,
+  .animate-marquee,
+  .animate-blink {
+    animation: none !important;
+  }
+}
