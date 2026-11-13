@@ -260,65 +260,6 @@
     --pc-step: 4px;
   }
 
-  /*
-    Pixel marquee. `--px` is one pixel cell, which is also the shadow step.
-    A letter is sized in cells and its box-shadow paints every filled cell, so
-    a glyph costs one DOM node instead of 25.
-  */
-  .pixel-marquee {
-    --px: 3px;
-  }
-
-  @media (min-width: 768px) {
-    .pixel-marquee {
-      --px: 4px;
-    }
-  }
-
-  .pixel-word {
-    display: inline-flex;
-    gap: calc(var(--px) * 1.5);
-    margin-inline: calc(var(--px) * 2);
-  }
-
-  /*
-    A letter is a sized wrapper; the glyph is painted by a one-cell pseudo
-    element whose box-shadow repeats that cell at every filled offset. Drawing
-    the shadow on the wrapper itself would copy the whole letter box instead of
-    one pixel.
-  */
-  .pixel-letter {
-    position: relative;
-    display: block;
-    flex: none;
-    background: transparent;
-  }
-
-  .pixel-letter::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: var(--px);
-    height: var(--px);
-    box-shadow: var(--glyph);
-  }
-
-  .pixel-space {
-    display: inline-block;
-    width: calc(var(--px) * 5);
-  }
-
-  .pixel-separator {
-    display: inline-block;
-    flex: none;
-    width: calc(var(--px) * 2);
-    height: calc(var(--px) * 2);
-    margin-inline: calc(var(--px) * 6);
-    background: var(--ink);
-    opacity: 0.35;
-  }
-
   /* A hairline drawn as pixel ticks instead of a solid rule. */
   .pixel-rule {
     height: 3px;
@@ -343,15 +284,6 @@
 
 /* Drift for the pixel wave. Two copies sit side by side, so -50% loops. */
 @keyframes pixel-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-@keyframes marquee-slide {
   from {
     transform: translate3d(0, 0, 0);
   }
@@ -481,10 +413,6 @@
   animation: pixel-drift 38s linear infinite;
 }
 
-.animate-marquee {
-  animation: marquee-slide 32s linear infinite;
-}
-
 .animate-blink {
   animation: pixel-blink 2.4s steps(2, end) infinite;
 }
@@ -535,7 +463,6 @@
 /* One switch governs every decorative motion: the motion toggle, and the
    operating system preference for people who never touch the toggle. */
 [data-motion="off"] .animate-pixel-drift,
-[data-motion="off"] .animate-marquee,
 [data-motion="off"] .animate-blink,
 [data-motion="off"] .animate-toast-enter,
 [data-motion="off"] .animate-pixel-stamp,
@@ -576,7 +503,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-pixel-drift,
-  .animate-marquee,
   .animate-blink,
   .animate-toast-enter,
   .animate-pixel-stamp,
