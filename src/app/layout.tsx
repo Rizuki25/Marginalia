@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Lora, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { PixelCursor } from "@/components/wild/pixel-cursor";
 import { THEME_SCRIPT } from "@/components/wild/theme-script";
@@ -22,6 +22,22 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair-raw",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const lora = Lora({
+  variable: "--font-lora-raw",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Marginalia · Pelacak bacaan",
   description:
@@ -40,7 +56,7 @@ export default function RootLayout({
       // hydrates, so those two attributes legitimately differ from the
       // server HTML.
       suppressHydrationWarning
-      className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${plexMono.variable} ${playfair.variable} ${lora.variable} h-full antialiased`}
     >
       <head>
         <script

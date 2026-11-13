@@ -94,6 +94,8 @@
   --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo,
     monospace;
+  --font-playfair: var(--font-playfair-raw), Georgia, "Times New Roman", serif;
+  --font-lora: var(--font-lora-raw), Georgia, "Times New Roman", serif;
 
   --radius-sm: 0px;
   --radius-md: 6px;

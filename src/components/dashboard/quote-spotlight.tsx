@@ -57,7 +57,7 @@ export function QuoteSpotlight({
         ) : null}
       </div>
 
-      <blockquote className="display-2 mt-6 max-w-3xl text-[clamp(21px,2.4vw,32px)] text-paper">
+      <blockquote className="mt-6 max-w-3xl font-playfair text-[clamp(22px,2.5vw,34px)] leading-[1.24] font-semibold tracking-[-0.015em] text-paper">
         &ldquo;{quote.content}&rdquo;
       </blockquote>
 

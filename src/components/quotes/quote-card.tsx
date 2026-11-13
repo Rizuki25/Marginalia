@@ -24,7 +24,7 @@ export function QuoteCard({ quote }: { quote: VaultQuote }) {
         />
       </div>
 
-      <blockquote className="mt-4 font-sans text-[17px] leading-[1.5] tracking-[-0.01em] text-ink">
+      <blockquote className="mt-4 font-lora text-[18px] leading-[1.6] tracking-[-0.005em] text-ink">
         {quote.content}
       </blockquote>
 
